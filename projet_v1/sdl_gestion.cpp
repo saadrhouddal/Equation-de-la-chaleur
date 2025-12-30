@@ -47,48 +47,37 @@ void GestionSDL::attendre(int ms) {
     SDL_Delay(ms);
 }
 
-// --- NOUVELLE PALETTE : BLEU -> JAUNE -> ORANGE -> ROUGE ---
+// --- PALETTE FEU : BLEU -> JAUNE -> ORANGE -> ROUGE ---
 void GestionSDL::definir_couleur_temp(double temp, double t_min, double t_max) {
-    // 1. Calcul du ratio (0.0 = t_min, 1.0 = t_max)
     double ratio = (temp - t_min) / (t_max - t_min);
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
     Uint8 r = 0, g = 0, b = 0;
 
-    // 2. Découpage du dégradé en 3 tiers
-    // Tiers 1 : Bleu (Froid) vers Jaune (Début de chauffe)
-    // Tiers 2 : Jaune vers Orange
-    // Tiers 3 : Orange vers Rouge (Max)
-
     if (ratio <= 0.33) {
-        // De Bleu (0,0,255) à Jaune (255,255,0)
+        // Tiers 1 : De Bleu (0,0,255) à Jaune (255,255,0)
         double local = ratio / 0.33;
         r = (Uint8)(255 * local);
         g = (Uint8)(255 * local);
         b = (Uint8)(255 * (1.0 - local));
     } 
     else if (ratio <= 0.66) {
-        // De Jaune (255,255,0) à Orange (255,128,0)
-        // Le rouge reste à 255, le bleu reste à 0.
-        // Seul le vert descend de 255 à 128.
+        // Tiers 2 : De Jaune (255,255,0) à Orange (255,128,0)
         double local = (ratio - 0.33) / 0.33;
         r = 255;
-        g = (Uint8)(255 - (127 * local)); // Descend vers l'orange
+        g = (Uint8)(255 - (127 * local)); 
         b = 0;
     } 
     else {
-        // De Orange (255,128,0) à Rouge (255,0,0)
-        // Le vert descend de 128 à 0.
+        // Tiers 3 : De Orange (255,128,0) à Rouge (255,0,0)
         double local = (ratio - 0.66) / 0.34;
         r = 255;
         g = (Uint8)(128 * (1.0 - local));
         b = 0;
     }
 
-    // Exception visuelle : 
-    // Si la température est exactement la température ambiante (à 0.1 près),
-    // on affiche gris foncé pour distinguer la pièce du fond noir.
+    // Affichage gris foncé pour la température ambiante exacte (pour voir les murs froids)
     if (std::abs(temp - 286.15) < 0.1) {
        r = 40; g = 40; b = 40;
     }
@@ -109,16 +98,24 @@ void GestionSDL::dessiner_barre(const std::vector<double>& temp, double t_min, d
     }
 }
 
+// --- CORRECTION AXE Y ---
 void GestionSDL::dessiner_surface_2d(const std::vector<double>& grille, int N, double t_min, double t_max) {
     double cell_w = (double)largeur_ / N;
     double cell_h = (double)hauteur_ / N;
 
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
+    for (int i = 0; i < N; ++i) { // i est l'indice de ligne (Y mathématique)
+        for (int j = 0; j < N; ++j) { // j est l'indice de colonne (X mathématique)
+            
             definir_couleur_temp(grille[i * N + j], t_min, t_max);
+            
             SDL_Rect r;
             r.x = (int)(j * cell_w);
-            r.y = (int)(i * cell_h);
+            
+            // INVERSION ICI : 
+            // En SDL, Y=0 est en haut. En physique, Y=0 est en bas.
+            // On dessine la ligne i=0 tout en bas de la fenêtre.
+            r.y = (int)((N - 1 - i) * cell_h);
+            
             r.w = (int)cell_w + 1;
             r.h = (int)cell_h + 1;
             SDL_RenderFillRect(rendu_, &r);
