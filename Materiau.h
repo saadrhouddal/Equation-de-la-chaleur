@@ -12,43 +12,43 @@ class Materiau {
 public:
     /**
      * @enum TypeMateriau
-     * @brief Énumération des types de matériaux disponibles.
+     * @brief Énumération des types de matériaux.
      */
     enum class TypeMateriau {
-        Cuivre,      ///< Matériau : Cuivre.
-        Fer,         ///< Matériau : Fer.
-        Verre,       ///< Matériau : Verre.
-        Polystyrene  ///< Matériau : Polystyrène.
+        Cuivre,
+        Fer,
+        Verre,
+        Polystyrene
     };
 
     /**
      * @brief Constructeur basé sur le type de matériau.
-     * @param type Type du matériau (par exemple : Cuivre, Fer).
+     * @param type Type du matériau.
      */
     Materiau(TypeMateriau type);
 
     /**
      * @brief Obtient la conductivité thermique du matériau.
-     * @return Conductivité thermique en W/(m·K).
+     * @return Conductivité thermique en W.m-1·K-1.
      */
-    double getLambda() const;
+    double obtenirLambda() const;
 
     /**
-     * @brief Obtient la densité du matériau.
-     * @return Densité en kg/m³.
+     * @brief Obtient la masse volumique du matériau.
+     * @return Masse volumique en kg.m-3.
      */
-    double getRho() const;
+    double obtenirMasseVolumique() const;
 
     /**
-     * @brief Obtient la capacité thermique du matériau.
-     * @return Capacité thermique en J/(kg·K).
+     * @brief Obtient la capacité thermique spécifique du matériau.
+     * @return Capacité thermique en J.kg-1·K-1.
      */
-    double getC() const;
+    double obtenirCapaciteThermique() const;
 
 private:
-    double lambda; ///< Conductivité thermique.
-    double rho;    ///< Densité du matériau.
-    double c;      ///< Capacité thermique spécifique.
+    double lambda_;                 // Conductivité thermique.
+    double masse_volumique_;        // Densité du matériau.
+    double capacite_thermique_;     // Capacité thermique spécifique.
 };
 
-#endif // MATERIAU_H
+#endif

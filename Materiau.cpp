@@ -1,41 +1,39 @@
-#include "Materiau.h"
+#include "materiau.h"
 
-// Constructeur basé sur le type de matériau
 Materiau::Materiau(TypeMateriau type) {
+    // Initialisation des propriétés selon le type de matériau
     switch(type) {
         case TypeMateriau::Cuivre:
-            lambda = 389.0;
-            rho = 8940.0;
-            c = 380.0;
+            lambda_ = 389.0;
+            masse_volumique_ = 8940.0;
+            capacite_thermique_ = 380.0;
             break;
         case TypeMateriau::Fer:
-            lambda = 80.2;
-            rho = 7874.0;
-            c = 440.0;
+            lambda_ = 80.2;
+            masse_volumique_ = 7874.0;
+            capacite_thermique_ = 440.0;
             break;
         case TypeMateriau::Verre:
-            lambda = 1.2;
-            rho = 2530.0;
-            c = 840.0;
+            lambda_ = 1.2;
+            masse_volumique_ = 2530.0;
+            capacite_thermique_ = 840.0;
             break;
         case TypeMateriau::Polystyrene:
-            lambda = 0.1;
-            rho = 1040.0;
-            c = 1200.0;
+            lambda_ = 0.1;
+            masse_volumique_ = 1040.0;
+            capacite_thermique_ = 1200.0;
             break;
     }
 }
 
-double Materiau::getLambda() const {
-    return lambda;
+double Materiau::obtenirLambda() const {
+    return lambda_;
 }
 
-double Materiau::getRho() const {
-    return rho;
+double Materiau::obtenirMasseVolumique() const {
+    return masse_volumique_;
 }
 
-double Materiau::getC() const {
-    return c;
+double Materiau::obtenirCapaciteThermique() const {
+    return capacite_thermique_;
 }
-
-
