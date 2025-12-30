@@ -1,125 +1,100 @@
 #include "solveur.h"
 #include <cmath>
 #include <iostream>
+#include <algorithm>
 
-// Constructeur : initialise la géométrie et le maillage
-SolveurChaleur::SolveurChaleur(Materiau mat, int nb_points, double L, double t_max)
-    : materiau_(mat), nb_points_(nb_points), longueur_(L), t_max_(t_max) {
-    
+// --- IMPLÉMENTATION 1D (Implicite) ---
+Solveur1D::Solveur1D(Materiau mat, int nb_points, double L, double t_max)
+    : Solveur(mat, L, t_max), nb_points_(nb_points) {
     dx_ = longueur_ / (nb_points_ - 1);
-    
-    // On veut 100 itérations pour l'animation (consigne)
-    // Mais pour la stabilité/précision, on peut en faire plus.
-    // Ici on fixe dt pour avoir environ 100 frames sur t_max.
-    dt_ = t_max_ / 1000.0; // Plus de pas de calcul que d'affichage pour la précision
-
-    initialiser_conditions_initiales();
+    dt_ = t_max_ / 1000.0; 
+    u_.assign(nb_points_, 13.0 + 273.15);
+    u_next_ = u_;
 }
 
-void SolveurChaleur::initialiser_conditions_initiales() {
-    u_actuel_.resize(nb_points_);
-    u_suivant_.resize(nb_points_);
-
-    // Condition initiale : Température uniforme de 13°C (286.15 K)
-    // Consigne [cite: 4174, 4202]
-    double temp_initiale = 13.0 + 273.15; 
-    for (int i = 0; i < nb_points_; ++i) {
-        u_actuel_[i] = temp_initiale;
-    }
+double Solveur1D::source_F(double x) {
+    double f = 80.0; 
+    if (x >= 0.1 * longueur_ && x <= 0.2 * longueur_) return t_max_ * f * f;
+    if (x >= 0.5 * longueur_ && x <= 0.6 * longueur_) return 0.75 * t_max_ * f * f;
+    return 0.0;
 }
 
-// Terme source F(x) défini par morceaux [cite: 4198]
-double SolveurChaleur::calculer_source_F(double x) {
-    double f = 80.0; // Valeur f donnée en Celsius, on l'utilise comme delta
-    double val_F = 0.0;
-
-    // Attention aux intervalles donnés [L/10, 2L/10] etc.
-    if (x >= longueur_ / 10.0 && x <= 2.0 * longueur_ / 10.0) {
-        val_F = t_max_ * f * f;
-    } else if (x >= 5.0 * longueur_ / 10.0 && x <= 6.0 * longueur_ / 10.0) {
-        val_F = 0.75 * t_max_ * f * f;
-    }
-    return val_F;
-}
-
-const std::vector<double>& SolveurChaleur::get_temperatures() const {
-    return u_actuel_;
-}
-
-// Algorithme de Thomas pour inverser la matrice tridiagonale
-void SolveurChaleur::resoudre_tridiagonal(const std::vector<double>& d) {
+void Solveur1D::avancer_temps() {
+    double alpha = materiau_.get_diffusivite();
+    double r = (alpha * dt_) / (dx_ * dx_);
     int n = nb_points_;
-    std::vector<double> c_prime(n);
-    std::vector<double> d_prime(n);
+    std::vector<double> a(n, -r), b(n, 1.0 + 2.0*r), c(n, -r), rhs(n);
 
-    // Coefficients matriciels
-    double lambda = materiau_.get_lambda();
-    double rho = materiau_.get_rho();
-    double c_p = materiau_.get_c();
-    double r = (lambda * dt_) / (rho * c_p * dx_ * dx_);
-
-    // Construction des diagonales A, B, C pour la méthode implicite
-    // Équation : -r*u_{i-1} + (1+2r)*u_{i} -r*u_{i+1} = RHS
-    
-    // Forward sweep
-    // Condition Neumann en x=0 (i=0) : u_{-1} = u_{1} => modifie l'équation 0
-    // Condition Dirichlet en x=L (i=n-1) : u fixé
-    
-    // Pour simplifier ici (code simple), on applique Dirichlet aux deux bouts pour l'algo Thomas standard, 
-    // puis on corrigera pour Neumann ou on adapte les coeffs.
-    // Adaptation Neumann i=0: (1+2r)u_0 - 2r u_1 = RHS_0 (car u_-1 = u_1)
-    
-    std::vector<double> a(n, -r);       // Diag inférieure
-    std::vector<double> b_mat(n, 1.0 + 2.0 * r); // Diag principale
-    std::vector<double> c(n, -r);       // Diag supérieure
-
-    // Correction Neumann à gauche (x=0)
+    for(int i=0; i<n; ++i) {
+        double src = (source_F(i*dx_) / (materiau_.get_rho() * materiau_.get_c())) * dt_;
+        rhs[i] = u_[i] + src;
+    }
+    // CL Neumann (gauche) et Dirichlet (droite)
     c[0] = -2.0 * r; 
+    a[n-1] = 0.0; b[n-1] = 1.0; c[n-1] = 0.0; rhs[n-1] = 13.0 + 273.15;
+
+    // Thomas Algorithm
+    std::vector<double> cp(n), dp(n);
+    cp[0] = c[0] / b[0]; dp[0] = rhs[0] / b[0];
+    for(int i=1; i<n; ++i) {
+        double temp = b[i] - a[i] * cp[i-1];
+        if (i < n-1) cp[i] = c[i] / temp;
+        dp[i] = (rhs[i] - a[i] * dp[i-1]) / temp;
+    }
+    u_next_[n-1] = dp[n-1];
+    for(int i=n-2; i>=0; --i) u_next_[i] = dp[i] - cp[i] * u_next_[i+1];
     
-    // Correction Dirichlet à droite (x=L): T est fixe à T_init
-    // On force l'équation u_{N-1} = T_init -> b=1, a=0, c=0, d=T_init
-    a[n-1] = 0.0;
-    b_mat[n-1] = 1.0;
-    c[n-1] = 0.0; // Hors bornes mais pour la forme
-
-    // Forward elimination
-    c_prime[0] = c[0] / b_mat[0];
-    d_prime[0] = d[0] / b_mat[0];
-
-    for (int i = 1; i < n; i++) {
-        double temp = b_mat[i] - a[i] * c_prime[i - 1];
-        if (i < n - 1) {
-            c_prime[i] = c[i] / temp;
-        }
-        d_prime[i] = (d[i] - a[i] * d_prime[i - 1]) / temp;
-    }
-
-    // Back substitution
-    u_suivant_[n - 1] = d_prime[n - 1];
-    for (int i = n - 2; i >= 0; i--) {
-        u_suivant_[i] = d_prime[i] - c_prime[i] * u_suivant_[i + 1];
-    }
+    u_ = u_next_;
+    temps_actuel_ += dt_;
 }
 
-void SolveurChaleur::avancer_temps() {
-    std::vector<double> rhs(nb_points_);
-    double rho = materiau_.get_rho();
-    double c_p = materiau_.get_c();
+// --- IMPLÉMENTATION 2D (Explicite) ---
+Solveur2D::Solveur2D(Materiau mat, int points_par_cote, double L, double t_max)
+    : Solveur(mat, L, t_max), N_(points_par_cote) {
+    dx_ = longueur_ / (N_ - 1);
+    
+    // Calcul automatique de la stabilité CFL selon le matériau
+    double alpha = materiau_.get_diffusivite();
+    // Plus alpha est grand (conducteur), plus dt doit être petit
+    double dt_stable = (dx_ * dx_) / (4.2 * alpha); 
+    dt_ = std::min(t_max_ / 2000.0, dt_stable);
 
-    // Construction du membre de droite (RHS) : u_n + source
-    for (int i = 0; i < nb_points_; ++i) {
-        double x = i * dx_;
-        double terme_source = (calculer_source_F(x) / (rho * c_p)) * dt_;
-        
-        rhs[i] = u_actuel_[i] + terme_source;
+    u_.assign(N_ * N_, 13.0 + 273.15);
+    u_next_ = u_;
+}
+
+double Solveur2D::source_F(double x, double y) {
+    // Zones de chauffe
+    bool x_z1 = (x >= 1.0/6.0 && x <= 2.0/6.0);
+    bool x_z2 = (x >= 4.0/6.0 && x <= 5.0/6.0);
+    bool y_z1 = (y >= 1.0/6.0 && y <= 2.0/6.0);
+    bool y_z2 = (y >= 4.0/6.0 && y <= 5.0/6.0);
+    double val = t_max_ * 6400.0; 
+
+    if ((x_z1 && y_z1) || (x_z2 && y_z1) || (x_z1 && y_z2) || (x_z2 && y_z2)) return val;
+    return 0.0;
+}
+
+void Solveur2D::avancer_temps() {
+    double alpha = materiau_.get_diffusivite();
+    double coeff = (alpha * dt_) / (dx_ * dx_);
+    double const_src = dt_ / (materiau_.get_rho() * materiau_.get_c());
+
+    for (int i = 1; i < N_ - 1; ++i) {
+        for (int j = 1; j < N_ - 1; ++j) {
+            int k = idx(i, j);
+            double laplacien = u_[idx(i+1,j)] + u_[idx(i-1,j)] + u_[idx(i,j+1)] + u_[idx(i,j-1)] - 4.0*u_[k];
+            u_next_[k] = u_[k] + coeff * laplacien + source_F(j*dx_, i*dx_) * const_src;
+        }
     }
+    // CL Dirichlet (Haut/Droite)
+    double T_b = 13.0 + 273.15;
+    for (int j = 0; j < N_; ++j) u_next_[idx(N_-1, j)] = T_b;
+    for (int i = 0; i < N_; ++i) u_next_[idx(i, N_-1)] = T_b;
+    // CL Neumann (Bas/Gauche)
+    for (int j = 0; j < N_; ++j) u_next_[idx(0, j)] = u_next_[idx(1, j)];
+    for (int i = 0; i < N_; ++i) u_next_[idx(i, 0)] = u_next_[idx(i, 1)];
 
-    // Force la condition de Dirichlet sur le RHS pour le dernier point
-    // u(t, L) = u0 = 286.15 K
-    rhs[nb_points_ - 1] = 13.0 + 273.15;
-
-    resoudre_tridiagonal(rhs);
-
-    // Mise à jour
-    u_actuel_ = u_suivant_;
+    u_ = u_next_;
+    temps_actuel_ += dt_;
 }
