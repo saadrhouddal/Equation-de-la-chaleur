@@ -1,6 +1,7 @@
 #include "sdl_gestion.h"
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 GestionSDL::GestionSDL(std::string titre, int largeur, int hauteur) 
     : largeur_(largeur), hauteur_(hauteur) {
@@ -19,7 +20,7 @@ GestionSDL::~GestionSDL() {
 }
 
 void GestionSDL::effacer() {
-    SDL_SetRenderDrawColor(rendu_, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(rendu_, 0, 0, 0, 255); // Fond noir
     SDL_RenderClear(rendu_);
 }
 
@@ -34,26 +35,65 @@ void GestionSDL::changer_titre(const std::string& titre) {
 int GestionSDL::verifier_entree() {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT) return 1; // Code 1 : Quitter
+        if (e.type == SDL_QUIT) return 1;
         if (e.type == SDL_KEYDOWN) {
-            if (e.key.keysym.sym == SDLK_m) return 2; // Code 2 : Changer Matériau
+            if (e.key.keysym.sym == SDLK_m) return 2;
         }
     }
-    return 0; // Code 0 : Rien de spécial
+    return 0;
 }
 
 void GestionSDL::attendre(int ms) {
     SDL_Delay(ms);
 }
 
+// --- NOUVELLE PALETTE : BLEU -> JAUNE -> ORANGE -> ROUGE ---
 void GestionSDL::definir_couleur_temp(double temp, double t_min, double t_max) {
+    // 1. Calcul du ratio (0.0 = t_min, 1.0 = t_max)
     double ratio = (temp - t_min) / (t_max - t_min);
-    ratio = std::max(0.0, std::min(1.0, ratio));
-    
-    // Dégradé : Bleu (Froid) -> Rouge (Chaud)
-    Uint8 r = (Uint8)(255 * ratio);
-    Uint8 b = (Uint8)(255 * (1.0 - ratio));
-    SDL_SetRenderDrawColor(rendu_, r, 0, b, 255);
+    if (ratio < 0.0) ratio = 0.0;
+    if (ratio > 1.0) ratio = 1.0;
+
+    Uint8 r = 0, g = 0, b = 0;
+
+    // 2. Découpage du dégradé en 3 tiers
+    // Tiers 1 : Bleu (Froid) vers Jaune (Début de chauffe)
+    // Tiers 2 : Jaune vers Orange
+    // Tiers 3 : Orange vers Rouge (Max)
+
+    if (ratio <= 0.33) {
+        // De Bleu (0,0,255) à Jaune (255,255,0)
+        double local = ratio / 0.33;
+        r = (Uint8)(255 * local);
+        g = (Uint8)(255 * local);
+        b = (Uint8)(255 * (1.0 - local));
+    } 
+    else if (ratio <= 0.66) {
+        // De Jaune (255,255,0) à Orange (255,128,0)
+        // Le rouge reste à 255, le bleu reste à 0.
+        // Seul le vert descend de 255 à 128.
+        double local = (ratio - 0.33) / 0.33;
+        r = 255;
+        g = (Uint8)(255 - (127 * local)); // Descend vers l'orange
+        b = 0;
+    } 
+    else {
+        // De Orange (255,128,0) à Rouge (255,0,0)
+        // Le vert descend de 128 à 0.
+        double local = (ratio - 0.66) / 0.34;
+        r = 255;
+        g = (Uint8)(128 * (1.0 - local));
+        b = 0;
+    }
+
+    // Exception visuelle : 
+    // Si la température est exactement la température ambiante (à 0.1 près),
+    // on affiche gris foncé pour distinguer la pièce du fond noir.
+    if (std::abs(temp - 286.15) < 0.1) {
+       r = 40; g = 40; b = 40;
+    }
+
+    SDL_SetRenderDrawColor(rendu_, r, g, b, 255);
 }
 
 void GestionSDL::dessiner_barre(const std::vector<double>& temp, double t_min, double t_max) {
