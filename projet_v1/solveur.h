@@ -23,6 +23,9 @@ public:
     double get_temps_actuel() const { return temps_actuel_; }
     double get_dt() const { return dt_; }
     Materiau get_materiau() const { return materiau_; }
+
+    // C'est cette méthode qui manquait :
+    double get_temps_max() const { return t_max_; }
 };
 
 class Solveur1D : public Solveur {
