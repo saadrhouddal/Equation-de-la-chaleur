@@ -47,40 +47,23 @@ void GestionSDL::attendre(int ms) {
     SDL_Delay(ms);
 }
 
-// --- PALETTE FEU : BLEU -> JAUNE -> ORANGE -> ROUGE ---
+// --- NOUVELLE PALETTE : MONOCHROME ROUGE ---
 void GestionSDL::definir_couleur_temp(double temp, double t_min, double t_max) {
     double ratio = (temp - t_min) / (t_max - t_min);
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
-    Uint8 r = 0, g = 0, b = 0;
-
-    if (ratio <= 0.33) {
-        // Tiers 1 : De Bleu (0,0,255) à Jaune (255,255,0)
-        double local = ratio / 0.33;
-        r = (Uint8)(255 * local);
-        g = (Uint8)(255 * local);
-        b = (Uint8)(255 * (1.0 - local));
-    } 
-    else if (ratio <= 0.66) {
-        // Tiers 2 : De Jaune (255,255,0) à Orange (255,128,0)
-        double local = (ratio - 0.33) / 0.33;
-        r = 255;
-        g = (Uint8)(255 - (127 * local)); 
-        b = 0;
-    } 
-    else {
-        // Tiers 3 : De Orange (255,128,0) à Rouge (255,0,0)
-        double local = (ratio - 0.66) / 0.34;
-        r = 255;
-        g = (Uint8)(128 * (1.0 - local));
-        b = 0;
-    }
-
-    // Affichage gris foncé pour la température ambiante exacte (pour voir les murs froids)
-    if (std::abs(temp - 286.15) < 0.1) {
-       r = 40; g = 40; b = 40;
-    }
+    // Logique :
+    // 0% (Froid) -> Gris sombre (50, 50, 50) pour voir le matériau
+    // 100% (Chaud) -> Rouge vif (255, 0, 0)
+    
+    // Interpolation linéaire
+    // R passe de 50 à 255
+    // G et B passent de 50 à 0 (le gris disparait pour laisser le rouge pur)
+    
+    Uint8 r = (Uint8)(50 + (205 * ratio)); 
+    Uint8 g = (Uint8)(50 - (50 * ratio));
+    Uint8 b = (Uint8)(50 - (50 * ratio));
 
     SDL_SetRenderDrawColor(rendu_, r, g, b, 255);
 }
@@ -98,24 +81,19 @@ void GestionSDL::dessiner_barre(const std::vector<double>& temp, double t_min, d
     }
 }
 
-// --- CORRECTION AXE Y ---
 void GestionSDL::dessiner_surface_2d(const std::vector<double>& grille, int N, double t_min, double t_max) {
     double cell_w = (double)largeur_ / N;
     double cell_h = (double)hauteur_ / N;
 
-    for (int i = 0; i < N; ++i) { // i est l'indice de ligne (Y mathématique)
-        for (int j = 0; j < N; ++j) { // j est l'indice de colonne (X mathématique)
+    for (int i = 0; i < N; ++i) { 
+        for (int j = 0; j < N; ++j) { 
             
             definir_couleur_temp(grille[i * N + j], t_min, t_max);
             
             SDL_Rect r;
             r.x = (int)(j * cell_w);
-            
-            // INVERSION ICI : 
-            // En SDL, Y=0 est en haut. En physique, Y=0 est en bas.
-            // On dessine la ligne i=0 tout en bas de la fenêtre.
+            // Inversion Y pour avoir le bas en bas
             r.y = (int)((N - 1 - i) * cell_h);
-            
             r.w = (int)cell_w + 1;
             r.h = (int)cell_h + 1;
             SDL_RenderFillRect(rendu_, &r);
