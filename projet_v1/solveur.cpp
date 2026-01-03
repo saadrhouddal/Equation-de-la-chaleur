@@ -12,18 +12,18 @@ Solveur1D::Solveur1D(Materiau mat, int nb_points, double L, double t_max)
     dx_ = longueur_ / (nb_points_ - 1);
     
     // 1000 pas de temps pour 1D.
-    
     dt_ = t_max_ / 1000.0; 
     
-    u_.assign(nb_points_, 13.0 + 273.15); // [cite: 47] Température initiale 13°C
+    u_.assign(nb_points_, 13.0 + 273.15); 
     u_next_ = u_;
+
+    // OPTIMISATION : Allocation unique des vecteurs de travail
+    cp_.resize(nb_points_);
+    dp_.resize(nb_points_);
 }
 
 double Solveur1D::source_F(double x) {
     double f = 80.0; 
-    
-    // --- CORRECTION MAJEURE --- 
-    // Le sujet  spécifie des zones basées sur L/10, pas L/6.
     double l_10 = longueur_ / 10.0;
     
     // Zone 1 : [L/10, 2L/10] -> F = t_max * f^2
@@ -40,6 +40,8 @@ void Solveur1D::avancer_temps() {
     double r = (alpha * dt_) / (dx_ * dx_);
     int n = nb_points_;
     
+    // Note: a, b, c, rhs sont reconstruits à chaque tour car ils dépendent de u_
+    // ou sont très rapides à créer. Pour cp_ et dp_, on utilise les membres.
     std::vector<double> a(n, -r), b(n, 1.0 + 2.0*r), c(n, -r), rhs(n);
 
     // Condition Neumann (x=0) : Ordre 2
@@ -59,18 +61,19 @@ void Solveur1D::avancer_temps() {
     // Imposition Dirichlet à droite (13°C)
     rhs[n-1] = 13.0 + 273.15; 
 
-    // Algo Thomas
-    std::vector<double> cp(n), dp(n);
-    cp[0] = c[0]/b[0];
-    dp[0] = rhs[0]/b[0];
+    // Algo Thomas (utilise les vecteurs membres cp_ et dp_)
+    cp_[0] = c[0]/b[0];
+    dp_[0] = rhs[0]/b[0];
+    
     for(int i=1; i<n; i++) {
-        double temp = b[i] - a[i]*cp[i-1];
-        cp[i] = c[i] / temp;
-        dp[i] = (rhs[i] - a[i]*dp[i-1])/temp;
+        double temp = b[i] - a[i]*cp_[i-1];
+        cp_[i] = c[i] / temp;
+        dp_[i] = (rhs[i] - a[i]*dp_[i-1])/temp;
     }
-    u_next_[n-1] = dp[n-1];
+    
+    u_next_[n-1] = dp_[n-1];
     for(int i=n-2; i>=0; i--) {
-        u_next_[i] = dp[i] - cp[i]*u_next_[i+1];
+        u_next_[i] = dp_[i] - cp_[i]*u_next_[i+1];
     }
 
     u_ = u_next_;
@@ -86,25 +89,25 @@ Solveur2D::Solveur2D(Materiau mat, int nb_points, double L, double t_max)
     : Solveur(mat, L, t_max), N_(nb_points) {
     
     dx_ = longueur_ / (N_ - 1);
-    
-    
     dt_ = t_max_ / 1000.0; 
     
     u_.assign(N_ * N_, 13.0 + 273.15);
     u_next_ = u_;
     u_demi_ = u_; 
     
-    // --- OPTIMISATION ---
-    // Pré-allocation des vecteurs de travail pour éviter la réallocation dans la boucle
+    // OPTIMISATION : Pré-allocation des vecteurs de travail
     diag_inf_.resize(N_);
     diag_.resize(N_);
     diag_sup_.resize(N_);
     rhs_.resize(N_);
     result_.resize(N_);
+    
+    // Vecteurs pour Thomas
+    c_prime_.resize(N_);
+    d_prime_.resize(N_);
 }
 
 double Solveur2D::source_F(double x, double y) {
-    // Le sujet [cite: 88] utilise des divisions par 6 pour la plaque
     double l_6 = longueur_ / 6.0;
     bool zone_x1 = (x >= l_6 && x <= 2.0 * l_6);
     bool zone_x2 = (x >= 4.0 * l_6 && x <= 5.0 * l_6);
@@ -126,29 +129,27 @@ void Solveur2D::resoudre_thomas(int n,
                                 const std::vector<double>& c_sup, 
                                 const std::vector<double>& d_rhs, 
                                 std::vector<double>& x_sol) {
-    // Note: Pour une optimisation extrême, ces vecteurs aussi devraient être membres de classe
-    // Mais ils sont petits (1D), donc moins critique que les matrices principales.
-    static std::vector<double> c_prime, d_prime;
-    if ((int)c_prime.size() != n) { c_prime.resize(n); d_prime.resize(n); }
+    
+    // Utilisation des membres pré-alloués c_prime_ et d_prime_
+    // Plus besoin de static ou d'allocation ici.
 
-    c_prime[0] = c_sup[0] / b_diag[0];
-    d_prime[0] = d_rhs[0] / b_diag[0];
+    c_prime_[0] = c_sup[0] / b_diag[0];
+    d_prime_[0] = d_rhs[0] / b_diag[0];
 
     for (int i = 1; i < n; i++) {
-        double temp = b_diag[i] - a_inf[i] * c_prime[i - 1];
-        if (i < n - 1) c_prime[i] = c_sup[i] / temp;
-        d_prime[i] = (d_rhs[i] - a_inf[i] * d_prime[i - 1]) / temp;
+        double temp = b_diag[i] - a_inf[i] * c_prime_[i - 1];
+        // Le if est techniquement inutile si la boucle va jusqu'à n-1 pour c_prime,
+        // mais on garde la logique sûre.
+        if (i < n - 1) c_prime_[i] = c_sup[i] / temp;
+        d_prime_[i] = (d_rhs[i] - a_inf[i] * d_prime_[i - 1]) / temp;
     }
 
-    x_sol[n - 1] = d_prime[n - 1];
+    x_sol[n - 1] = d_prime_[n - 1];
     for (int i = n - 2; i >= 0; i--) {
-        x_sol[i] = d_prime[i] - c_prime[i] * x_sol[i + 1];
+        x_sol[i] = d_prime_[i] - c_prime_[i] * x_sol[i + 1];
     }
 }
 
-// ... (Haut du fichier inchangé jusqu'à resoudre_thomas) ...
-
-// DECOUPAGE DE LA FONCTION POUR RESPECTER LA LIMITE DE 50 LIGNES 
 void Solveur2D::etape_1_x_implicite(double r, double source_coeff) {
     double T_bord = 13.0 + 273.15;
 
