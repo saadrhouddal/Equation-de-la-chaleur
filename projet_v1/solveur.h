@@ -11,10 +11,11 @@ protected:
     double t_max_;
     double dt_;
     double temps_actuel_;
+    long long compteur_pas_; // Ajout pour suivre le nombre exact de pas
 
 public:
     Solveur(Materiau mat, double L, double t_max) 
-        : materiau_(mat), longueur_(L), t_max_(t_max), temps_actuel_(0.0) {}
+        : materiau_(mat), longueur_(L), t_max_(t_max), temps_actuel_(0.0), compteur_pas_(0) {}
     
     virtual ~Solveur() {}
     virtual void avancer_temps() = 0;
@@ -24,6 +25,7 @@ public:
     double get_dt() const { return dt_; }
     Materiau get_materiau() const { return materiau_; }
     double get_temps_max() const { return t_max_; }
+    long long get_compteur_pas() const { return compteur_pas_; }
 };
 
 // --- Solveur 1D ---
@@ -49,12 +51,14 @@ private:
     std::vector<double> u_;
     std::vector<double> u_next_;
     
-    // Nouveau vecteur pour l'étape intermédiaire (t + dt/2)
+    // Vecteur pour l'étape intermédiaire (ADI)
     std::vector<double> u_demi_; 
+
+    // Vecteurs pré-alloués pour éviter l'allocation dans la boucle (Optimisation)
+    std::vector<double> diag_inf_, diag_, diag_sup_, rhs_, result_;
 
     double source_F(double x, double y);
 
-    // Méthode utilitaire pour résoudre un système tridiagonal (Algo de Thomas)
     void resoudre_thomas(int n, 
                          const std::vector<double>& a_inf, 
                          const std::vector<double>& b_diag, 
@@ -67,7 +71,6 @@ public:
     void avancer_temps() override;
     const std::vector<double>& get_donnees() const override { return u_; }
 
-    // --- C'est la méthode qu'il manquait pour le main.cpp ---
     int get_N() const { return N_; }
 };
 

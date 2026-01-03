@@ -20,7 +20,7 @@ GestionSDL::~GestionSDL() {
 }
 
 void GestionSDL::effacer() {
-    SDL_SetRenderDrawColor(rendu_, 0, 0, 0, 255); // Fond noir
+    SDL_SetRenderDrawColor(rendu_, 0, 0, 0, 255); 
     SDL_RenderClear(rendu_);
 }
 
@@ -43,60 +43,67 @@ int GestionSDL::verifier_entree() {
     return 0;
 }
 
-void GestionSDL::attendre(int ms) {
-    SDL_Delay(ms);
+void GestionSDL::attendre(int millisecondes) {
+    SDL_Delay(millisecondes);
 }
 
-// --- NOUVELLE PALETTE : MONOCHROME ROUGE ---
 void GestionSDL::definir_couleur_temp(double temp, double t_min, double t_max) {
     double ratio = (temp - t_min) / (t_max - t_min);
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
-
-    // Logique :
-    // 0% (Froid) -> Gris sombre (50, 50, 50) pour voir le matériau
-    // 100% (Chaud) -> Rouge vif (255, 0, 0)
-    
-    // Interpolation linéaire
-    // R passe de 50 à 255
-    // G et B passent de 50 à 0 (le gris disparait pour laisser le rouge pur)
     
     Uint8 r = (Uint8)(50 + (205 * ratio)); 
     Uint8 g = (Uint8)(50 - (50 * ratio));
     Uint8 b = (Uint8)(50 - (50 * ratio));
-
     SDL_SetRenderDrawColor(rendu_, r, g, b, 255);
 }
 
 void GestionSDL::dessiner_barre(const std::vector<double>& temp, double t_min, double t_max) {
     int n = temp.size();
+    // Utilisation de double pour w_seg pour éviter la division entière donnant 0
     double w_seg = (double)largeur_ / n;
     int h_barre = 100;
-    int y = hauteur_ / 2 - h_barre / 2;
+    int y_start = hauteur_ / 2 - h_barre / 2;
 
     for (int i = 0; i < n; ++i) {
         definir_couleur_temp(temp[i], t_min, t_max);
-        SDL_Rect r = {(int)(i * w_seg), y, (int)w_seg + 1, h_barre};
+        
+        // Calcul précis des coordonnées
+        int x = (int)(i * w_seg);
+        int w = (int)((i + 1) * w_seg) - x; // Astuce pour éviter les trous
+        if (w < 1) w = 1; // Au moins 1 pixel de large
+
+        SDL_Rect r = {x, y_start, w, h_barre};
         SDL_RenderFillRect(rendu_, &r);
     }
 }
 
 void GestionSDL::dessiner_surface_2d(const std::vector<double>& grille, int N, double t_min, double t_max) {
-    double cell_w = (double)largeur_ / N;
-    double cell_h = (double)hauteur_ / N;
+    // Optimisation : On ne dessine pas des rectangles, mais des points (pixels).
+    // Si la grille est plus grande que la fenêtre, on saute des points (downsampling).
+    
+    double step_x = (double)largeur_ / N;
+    double step_y = (double)hauteur_ / N;
+    
+    // Si la grille est très fine (1001 pts) pour une fenêtre de 800px, 
+    // step est < 1. On risque de dessiner plusieurs points au même pixel (lent).
+    
+    // Stratégie optimisée : parcourir les PIXELS de l'écran et chercher la valeur correspondante
+    // C'est beaucoup plus rapide (800x800 iterations) que parcourir la grille (1000x1000).
+    
+    for (int y = 0; y < hauteur_; ++y) {
+        for (int x = 0; x < largeur_; ++x) {
+            // Retrouver l'indice i,j dans la grille correspondant au pixel x,y
+            int i = (int)(x / step_x); 
+            int j = (int)(y / step_y);
+            
+            // Sécurité bornes
+            if (i >= N) i = N - 1;
+            if (j >= N) j = N - 1;
 
-    for (int i = 0; i < N; ++i) { 
-        for (int j = 0; j < N; ++j) { 
-            
-            definir_couleur_temp(grille[i * N + j], t_min, t_max);
-            
-            SDL_Rect r;
-            r.x = (int)(j * cell_w);
-            // Inversion Y pour avoir le bas en bas
-            r.y = (int)((N - 1 - i) * cell_h);
-            r.w = (int)cell_w + 1;
-            r.h = (int)cell_h + 1;
-            SDL_RenderFillRect(rendu_, &r);
+            double val = grille[i * N + j];
+            definir_couleur_temp(val, t_min, t_max);
+            SDL_RenderDrawPoint(rendu_, x, y);
         }
     }
 }
