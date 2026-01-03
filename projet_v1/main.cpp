@@ -3,19 +3,18 @@
 #include <memory>
 #include <string>
 #include <algorithm>
-#include <iomanip> // <--- NÉCESSAIRE pour remplacer printf (setw, setprecision)
+#include <iomanip> 
 #include "materiau.h"
 #include "solveur.h"
 #include "sdl_gestion.h"
 
-// Structure pour stocker l'historique des stats
+
 struct EtapeLog {
     double temps;
     double t_max;
     double t_moy;
 };
 
-// --- FONCTIONS AUXILIAIRES ---
 
 std::unique_ptr<Solveur> fabriquer_solveur(int choix, const Materiau& mat) {
     double t_max = 16.0;
@@ -70,7 +69,6 @@ void afficher_rapport(const std::vector<EtapeLog>& historique, const std::string
                   << std::setw(8) << std::setprecision(2) << last.t_moy << "   |\n";
     }
     
-    // Rétablir l'affichage par défaut si nécessaire, ou laisser tel quel
     std::cout.unsetf(std::ios_base::floatfield); 
     
     std::cout << "======================================================\n";

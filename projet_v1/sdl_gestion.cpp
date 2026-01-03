@@ -60,47 +60,29 @@ void Sdl::definir_couleur_temp(double temp, double t_min, double t_max) {
 
 void Sdl::dessiner_barre(const std::vector<double>& temp, double t_min, double t_max) {
     int n = temp.size();
-    // Utilisation de double pour w_seg pour éviter la division entière donnant 0
     double w_seg = (double)largeur_ / n;
     int h_barre = 100;
     int y_start = hauteur_ / 2 - h_barre / 2;
 
     for (int i = 0; i < n; ++i) {
         definir_couleur_temp(temp[i], t_min, t_max);
-        
-        // Calcul précis des coordonnées
         int x = (int)(i * w_seg);
-        int w = (int)((i + 1) * w_seg) - x; // Astuce pour éviter les trous
-        if (w < 1) w = 1; // Au moins 1 pixel de large
-
+        int w = (int)((i + 1) * w_seg) - x; 
+        if (w < 1) w = 1; 
         SDL_Rect r = {x, y_start, w, h_barre};
         SDL_RenderFillRect(rendu_, &r);
     }
 }
 
 void Sdl::dessiner_surface_2d(const std::vector<double>& grille, int N, double t_min, double t_max) {
-    // Optimisation : On ne dessine pas des rectangles, mais des points (pixels).
-    // Si la grille est plus grande que la fenêtre, on saute des points (downsampling).
-    
     double step_x = (double)largeur_ / N;
     double step_y = (double)hauteur_ / N;
-    
-    // Si la grille est très fine (1001 pts) pour une fenêtre de 800px, 
-    // step est < 1. On risque de dessiner plusieurs points au même pixel (lent).
-    
-    // Stratégie optimisée : parcourir les PIXELS de l'écran et chercher la valeur correspondante
-    // C'est beaucoup plus rapide (800x800 iterations) que parcourir la grille (1000x1000).
-    
     for (int y = 0; y < hauteur_; ++y) {
         for (int x = 0; x < largeur_; ++x) {
-            // Retrouver l'indice i,j dans la grille correspondant au pixel x,y
             int i = (int)(x / step_x); 
             int j = (int)(y / step_y);
-            
-            // Sécurité bornes
             if (i >= N) i = N - 1;
             if (j >= N) j = N - 1;
-
             double val = grille[i * N + j];
             definir_couleur_temp(val, t_min, t_max);
             SDL_RenderDrawPoint(rendu_, x, y);

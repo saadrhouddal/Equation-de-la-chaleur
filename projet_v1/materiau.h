@@ -10,14 +10,14 @@
 class Materiau {
 private:
     std::string nom_;
-    double lambda_; ///< Conductivité thermique (W/m.K)
-    double rho_;    ///< Masse volumique (kg/m3)
-    double c_;      ///< Chaleur massique (J/kg.K)
+    double lambda_; // Conductivité thermique (W/m.K)
+    double rho_;    // Masse volumique (kg/m3)
+    double c_;      // Chaleur massique (J/kg.K)
 
 public:
     /**
      * @brief Constructeur d'un matériau.
-     * @param nom Nom du matériau (ex: "Cuivre").
+     * @param nom Nom du matériau .
      * @param lambda Conductivité (W/m.K).
      * @param rho Masse volumique (kg/m3).
      * @param c Chaleur massique (J/kg.K).
