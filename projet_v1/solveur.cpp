@@ -12,7 +12,7 @@ Solveur1D::Solveur1D(Materiau mat, int nb_points, double L, double t_max)
     dx_ = longueur_ / (nb_points_ - 1);
     
     // 1000 pas de temps pour 1D.
-    // Cela permettra d'afficher 1 image tous les 10 pas pour avoir 100 images.
+    
     dt_ = t_max_ / 1000.0; 
     
     u_.assign(nb_points_, 13.0 + 273.15); // [cite: 47] Température initiale 13°C
@@ -87,9 +87,8 @@ Solveur2D::Solveur2D(Materiau mat, int nb_points, double L, double t_max)
     
     dx_ = longueur_ / (N_ - 1);
     
-    // 400 pas de temps pour 2D (suffisant pour ADI stable).
-    // Affichage tous les 4 pas = 100 images.
-    dt_ = t_max_ / 400.0; 
+    
+    dt_ = t_max_ / 1000.0; 
     
     u_.assign(N_ * N_, 13.0 + 273.15);
     u_next_ = u_;
