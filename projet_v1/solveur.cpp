@@ -146,95 +146,78 @@ void Solveur2D::resoudre_thomas(int n,
     }
 }
 
-void Solveur2D::avancer_temps() {
-    double alpha = materiau_.get_diffusivite();
-    double r = (alpha * dt_ / 2.0) / (dx_ * dx_);
-    double source_coeff = (dt_ / 2.0) / (materiau_.get_rho() * materiau_.get_c());
-    double T_bord = 13.0 + 273.15; 
+// ... (Haut du fichier inchangé jusqu'à resoudre_thomas) ...
 
-    // --- ÉTAPE 1 : Implicite en X, Explicite en Y ---
-    // Balayage des lignes j.
-    // Attention: j=0 est un bord NEUMANN (inconnu), j=N-1 est DIRICHLET (connu)
-    
+// DECOUPAGE DE LA FONCTION POUR RESPECTER LA LIMITE DE 50 LIGNES 
+void Solveur2D::etape_1_x_implicite(double r, double source_coeff) {
+    double T_bord = 13.0 + 273.15;
+
+    // Balayage des lignes j. j=0 (Neumann) à j=N-2. j=N-1 est Dirichlet (fixe).
     for (int j = 0; j < N_ - 1; ++j) {
-        
         for (int i = 0; i < N_; ++i) {
             double src = source_F(i * dx_, j * dx_) * source_coeff;
             
-            // Diffusion Explicite Y (colonnes)
-            // Neumann haut (j=0) => u(x, -1) = u(x, 1) -> terme devient 2*r*(u(x,1) - u(x,0))
-            // Mais ici on écrit la convolution standard et on gère les voisins.
+            // Diffusion Explicite Y (gestion Neumann j=0 via ghost point simulé)
             double u_haut = (j > 0) ? u_[i * N_ + (j - 1)] : u_[i * N_ + 1]; 
             double u_bas  = (j < N_ - 1) ? u_[i * N_ + (j + 1)] : T_bord;
 
             double diff_y = r * (u_haut - 2.0 * u_[i * N_ + j] + u_bas);
-            
             rhs_[i] = u_[i * N_ + j] + diff_y + src;
 
-            // Matrice X (Implicite)
-            diag_inf_[i] = -r;
-            diag_[i]     = 1.0 + 2.0 * r;
-            diag_sup_[i] = -r;
+            // Construction Matrice X (Implicite)
+            diag_inf_[i] = -r; diag_[i] = 1.0 + 2.0 * r; diag_sup_[i] = -r;
         }
 
         // CL X (Ligne j) : Gauche Neumann (i=0), Droite Dirichlet (i=N-1)
-        diag_[0] = 1.0 + 2.0 * r; 
-        diag_sup_[0] = -2.0 * r; 
-        diag_inf_[0] = 0.0; 
+        diag_[0] = 1.0 + 2.0 * r; diag_sup_[0] = -2.0 * r; diag_inf_[0] = 0.0;
         
-        diag_[N_ - 1] = 1.0; 
-        diag_inf_[N_ - 1] = 0.0; 
-        diag_sup_[N_ - 1] = 0.0; 
+        diag_[N_ - 1] = 1.0; diag_inf_[N_ - 1] = 0.0; diag_sup_[N_ - 1] = 0.0; 
         rhs_[N_ - 1] = T_bord;
 
         resoudre_thomas(N_, diag_inf_, diag_, diag_sup_, rhs_, result_);
-
         for (int i = 0; i < N_; ++i) u_demi_[i * N_ + j] = result_[i];
     }
-    
-    // Dirichlet Bas (y=L) pour u_demi
+    // Dirichlet Bas (y=L)
     for (int i = 0; i < N_; ++i) u_demi_[i * N_ + (N_-1)] = T_bord;
+}
 
+void Solveur2D::etape_2_y_implicite(double r, double source_coeff) {
+    double T_bord = 13.0 + 273.15;
 
-    // --- ÉTAPE 2 : Explicite en X, Implicite en Y ---
     // Balayage des colonnes i
-    
     for (int i = 0; i < N_; ++i) {
-        
         for (int j = 0; j < N_; ++j) {
             double src = source_F(i * dx_, j * dx_) * source_coeff;
             
-            // Diffusion Explicite X
-            // Neumann gauche (i=0) -> voisin gauche = voisin droite
+            // Diffusion Explicite X (gestion Neumann i=0 via ghost point)
             double u_gauche = (i > 0) ? u_demi_[(i - 1) * N_ + j] : u_demi_[1 * N_ + j]; 
             double u_droite = (i < N_ - 1) ? u_demi_[(i + 1) * N_ + j] : T_bord;
             
             double diff_x = r * (u_gauche - 2.0 * u_demi_[i * N_ + j] + u_droite);
-
             rhs_[j] = u_demi_[i * N_ + j] + diff_x + src;
 
-            // Matrice Y (Implicite)
-            diag_inf_[j] = -r;
-            diag_[j]     = 1.0 + 2.0 * r;
-            diag_sup_[j] = -r;
+            // Construction Matrice Y (Implicite)
+            diag_inf_[j] = -r; diag_[j] = 1.0 + 2.0 * r; diag_sup_[j] = -r;
         }
 
-        // CL Y (Colonne i)
-        // Haut (j=0) : Neumann
-        diag_[0] = 1.0 + 2.0 * r; 
-        diag_sup_[0] = -2.0 * r; 
-        diag_inf_[0] = 0.0;
+        // CL Y (Colonne i) : Haut Neumann (j=0), Bas Dirichlet (j=N-1)
+        diag_[0] = 1.0 + 2.0 * r; diag_sup_[0] = -2.0 * r; diag_inf_[0] = 0.0;
 
-        // Bas (j=N-1) : Dirichlet
-        diag_[N_-1] = 1.0; 
-        diag_inf_[N_-1] = 0.0; 
-        diag_sup_[N_-1] = 0.0; 
+        diag_[N_-1] = 1.0; diag_inf_[N_-1] = 0.0; diag_sup_[N_-1] = 0.0; 
         rhs_[N_-1] = T_bord;
 
         resoudre_thomas(N_, diag_inf_, diag_, diag_sup_, rhs_, result_);
-
         for (int j = 0; j < N_; ++j) u_next_[i * N_ + j] = result_[j];
     }
+}
+
+void Solveur2D::avancer_temps() {
+    double alpha = materiau_.get_diffusivite();
+    double r = (alpha * dt_ / 2.0) / (dx_ * dx_);
+    double source_coeff = (dt_ / 2.0) / (materiau_.get_rho() * materiau_.get_c());
+
+    etape_1_x_implicite(r, source_coeff);
+    etape_2_y_implicite(r, source_coeff);
 
     u_ = u_next_;
     temps_actuel_ += dt_;
