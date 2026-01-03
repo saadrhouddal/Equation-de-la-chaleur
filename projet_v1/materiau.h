@@ -38,3 +38,13 @@ public:
 };
 
 #endif
+/**
+ * \mainpage Documentation du Projet Simulation Chaleur
+ *
+ * \section intro_sec Introduction
+ * Bienvenue dans la documentation technique du solveur thermique.
+ *
+ * \section arch_sec Architecture
+ * Voici l'architecture globale du projet :
+ * \image html uml.png "Diagramme UML des classes" width=600px
+ */

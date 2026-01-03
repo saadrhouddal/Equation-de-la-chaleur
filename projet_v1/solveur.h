@@ -55,7 +55,8 @@ private:
     int nb_points_;
     double dx_;
     std::vector<double> u_;
-    std::vector<double> u_next_; 
+    std::vector<double> u_next_;
+    std::vector<double> cp_, dp_;
     
     /**
      * @brief Calcule le terme source F(x).
@@ -78,7 +79,8 @@ private:
     double dx_;
     std::vector<double> u_;
     std::vector<double> u_next_;
-    std::vector<double> u_demi_; 
+    std::vector<double> u_demi_;
+    std::vector<double> c_prime_, d_prime_;
 
     // Vecteurs de travail pré-alloués
     std::vector<double> diag_inf_, diag_, diag_sup_, rhs_, result_;

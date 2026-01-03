@@ -1,7 +1,7 @@
 # Doxyfile pour Projet Chaleur ENSIIE
 
 # --- Informations sur le projet ---
-PROJECT_NAME           = "Projet Chaleur NOM1 NOM2"
+PROJECT_NAME           = "Projet Chaleur GRASSIAN RHOUDDAL"
 PROJECT_NUMBER         = "1.0"
 OUTPUT_LANGUAGE        = French
 
@@ -30,3 +30,25 @@ GENERATE_LATEX         = NO
 
 # Supprime les messages d'erreur non critiques lors de la génération
 QUIET                  = YES
+
+
+
+
+
+
+
+# Active la génération de graphiques
+HAVE_DOT               = YES
+
+# Dessine la hiérarchie des classes (Solveur -> Solveur1D...)
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+
+# Donne un look "UML" aux diagrammes (comme ton image)
+UML_LOOK               = YES
+
+# (Optionnel) Montre qui appelle quelle fonction
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+
+IMAGE_PATH             = .
