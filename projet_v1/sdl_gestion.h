@@ -10,7 +10,7 @@
  * * Cette classe encapsule la création de la fenêtre, du renderer, et 
  * fournit des primitives de dessin pour visualiser la température en 1D et 2D.
  */
-class GestionSDL {
+class Sdl {
 private:
     SDL_Window* fenetre_;
     SDL_Renderer* rendu_;
@@ -33,12 +33,12 @@ public:
      * @param largeur Largeur de la fenêtre en pixels.
      * @param hauteur Hauteur de la fenêtre en pixels.
      */
-    GestionSDL(std::string titre, int largeur, int hauteur);
+    Sdl(std::string titre, int largeur, int hauteur);
 
     /**
      * @brief Destructeur : Libère la mémoire et quitte la SDL.
      */
-    ~GestionSDL();
+    ~Sdl();
 
     /**
      * @brief Efface le contenu de la fenêtre (remplit en noir).

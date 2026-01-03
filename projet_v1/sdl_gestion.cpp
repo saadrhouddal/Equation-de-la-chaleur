@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-GestionSDL::GestionSDL(std::string titre, int largeur, int hauteur) 
+Sdl::Sdl(std::string titre, int largeur, int hauteur) 
     : largeur_(largeur), hauteur_(hauteur) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "Erreur SDL: " << SDL_GetError() << std::endl;
@@ -13,26 +13,26 @@ GestionSDL::GestionSDL(std::string titre, int largeur, int hauteur)
     rendu_ = SDL_CreateRenderer(fenetre_, -1, SDL_RENDERER_ACCELERATED);
 }
 
-GestionSDL::~GestionSDL() {
+Sdl::~Sdl() {
     SDL_DestroyRenderer(rendu_);
     SDL_DestroyWindow(fenetre_);
     SDL_Quit();
 }
 
-void GestionSDL::effacer() {
+void Sdl::effacer() {
     SDL_SetRenderDrawColor(rendu_, 0, 0, 0, 255); 
     SDL_RenderClear(rendu_);
 }
 
-void GestionSDL::afficher() {
+void Sdl::afficher() {
     SDL_RenderPresent(rendu_);
 }
 
-void GestionSDL::changer_titre(const std::string& titre) {
+void Sdl::changer_titre(const std::string& titre) {
     SDL_SetWindowTitle(fenetre_, titre.c_str());
 }
 
-int GestionSDL::verifier_entree() {
+int Sdl::verifier_entree() {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) return 1;
@@ -43,11 +43,11 @@ int GestionSDL::verifier_entree() {
     return 0;
 }
 
-void GestionSDL::attendre(int millisecondes) {
+void Sdl::attendre(int millisecondes) {
     SDL_Delay(millisecondes);
 }
 
-void GestionSDL::definir_couleur_temp(double temp, double t_min, double t_max) {
+void Sdl::definir_couleur_temp(double temp, double t_min, double t_max) {
     double ratio = (temp - t_min) / (t_max - t_min);
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
@@ -58,7 +58,7 @@ void GestionSDL::definir_couleur_temp(double temp, double t_min, double t_max) {
     SDL_SetRenderDrawColor(rendu_, r, g, b, 255);
 }
 
-void GestionSDL::dessiner_barre(const std::vector<double>& temp, double t_min, double t_max) {
+void Sdl::dessiner_barre(const std::vector<double>& temp, double t_min, double t_max) {
     int n = temp.size();
     // Utilisation de double pour w_seg pour éviter la division entière donnant 0
     double w_seg = (double)largeur_ / n;
@@ -78,7 +78,7 @@ void GestionSDL::dessiner_barre(const std::vector<double>& temp, double t_min, d
     }
 }
 
-void GestionSDL::dessiner_surface_2d(const std::vector<double>& grille, int N, double t_min, double t_max) {
+void Sdl::dessiner_surface_2d(const std::vector<double>& grille, int N, double t_min, double t_max) {
     // Optimisation : On ne dessine pas des rectangles, mais des points (pixels).
     // Si la grille est plus grande que la fenêtre, on saute des points (downsampling).
     

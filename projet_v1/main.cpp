@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdio>
 #include <vector>
 #include <memory>
 #include <string>
@@ -61,7 +62,7 @@ void afficher_rapport(const std::vector<EtapeLog>& historique, const std::string
     std::cout << ">>> APPUYEZ SUR 'M' POUR CHANGER DE MATERIAU <<<\n";
 }
 
-void mettre_a_jour_affichage(GestionSDL& sdl, Solveur* solv, int type_simu, double max_temp) {
+void mettre_a_jour_affichage(Sdl& sdl, Solveur* solv, int type_simu, double max_temp) {
     std::string titre = "T=" + std::to_string((int)solv->get_temps_actuel()) + "s - " + solv->get_materiau().get_nom();
     if (solv->get_temps_actuel() >= solv->get_temps_max()) titre = "FINI - " + solv->get_materiau().get_nom() + " - PRESS M";
     
@@ -80,22 +81,38 @@ void mettre_a_jour_affichage(GestionSDL& sdl, Solveur* solv, int type_simu, doub
     sdl.afficher();
 }
 
+
+
+
+
+
+
+void gerer_rapport_final(const Solveur& solv, std::vector<EtapeLog>& hist, 
+                         double max_temp, bool& rapport_fait) {
+    hist.push_back(enregistrer_stats(solv, max_temp));
+    afficher_rapport(hist, solv.get_materiau().get_nom());
+    rapport_fait = true;
+}
+
+
+
+
+
+
+
 // --- MAIN ---
 int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
-    GestionSDL graphisme("Projet Chaleur", 800, 800);
+    Sdl graphisme("Projet Chaleur", 800, 800);
     Materiau mat_courant("Cuivre", 389.0, 8940.0, 380.0);
-    
     int choix = 0;
     std::cout << "Simulation : [1] 1D (Barre) ou [2] 2D (Plaque) : ";
     std::cin >> choix;
     if (choix != 2) choix = 1;
-
     auto solveur = fabriquer_solveur(choix, mat_courant);
     std::vector<EtapeLog> historique;
     double max_temp_globale = 15.0;
     bool fini = false, rapport_fait = false, quitter = false;
-
     while (!quitter) {
         int action = graphisme.verifier_entree();
         if (action == 1) quitter = true;
@@ -104,22 +121,15 @@ int main(int argc, char* argv[]) {
             solveur = fabriquer_solveur(choix, mat_courant);
             historique.clear(); max_temp_globale = 15.0; fini = false; rapport_fait = false;
         }
-
         long long freq = (long long)((solveur->get_temps_max()/solveur->get_dt()) / 100);
         if (freq < 1) freq = 1;
-
         if (!fini && solveur->get_temps_actuel() < solveur->get_temps_max() - (solveur->get_dt()/2)) {
             solveur->avancer_temps();
             if (solveur->get_compteur_pas() % freq == 0) historique.push_back(enregistrer_stats(*solveur, max_temp_globale));
         } else {
-            fini = true;
-            if (!rapport_fait) { 
-                historique.push_back(enregistrer_stats(*solveur, max_temp_globale));
-                afficher_rapport(historique, mat_courant.get_nom()); 
-                rapport_fait = true; 
-            }
-        }
-
+    fini = true;
+    if (!rapport_fait) gerer_rapport_final(*solveur, historique, max_temp_globale, rapport_fait);
+}
         if ((solveur->get_compteur_pas() % freq == 0) || fini) 
             mettre_a_jour_affichage(graphisme, solveur.get(), choix, max_temp_globale);
         
