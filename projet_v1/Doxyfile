@@ -12,7 +12,10 @@ GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 GENERATE_LATEX         = NO
 QUIET                  = YES
-HAVE_DOT               = YES
+
+
+#Remplacer NO par YES pour activer les grahes (après avoir installé graphviz)
+HAVE_DOT               = NO
 CLASS_GRAPH            = YES
 COLLABORATION_GRAPH    = YES
 UML_LOOK               = YES
