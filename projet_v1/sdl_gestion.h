@@ -7,8 +7,8 @@
 
 /**
  * @brief Classe gérant l'affichage graphique via la bibliothèque SDL2.
- * * Cette classe encapsule la création de la fenêtre, du renderer, et 
- * fournit des primitives de dessin pour visualiser la température en 1D et 2D.
+ * * Cette classe encapsule la création de la fenêtre, le rendu, et 
+ * fournit des méthodes pour dessiner des visualisations 1D et 2D.
  */
 class Sdl {
 private:
@@ -19,10 +19,10 @@ private:
 
     /**
      * @brief Définit la couleur de dessin en fonction d'une température.
-     * * Utilise un dégradé (Bleu -> Rouge) pour représenter la chaleur.
+     * * On a choisi un dégradé (Noir -> Rouge) pour représenter la chaleur.
      * * @param temp Température actuelle de la cellule.
-     * @param t_min Température minimale de l'échelle (bleu).
-     * @param t_max Température maximale de l'échelle (rouge).
+     * @param t_min Température minimale de l'échelle (Noir).
+     * @param t_max Température maximale de l'échelle (Rouge).
      */
     void definir_couleur_temp(double temp, double t_min, double t_max);
 
@@ -46,22 +46,22 @@ public:
     void effacer();
 
     /**
-     * @brief Met à jour l'écran avec le rendu actuel (double buffering).
+     * @brief Met à jour l'écran avec le rendu actuel
      */
     void afficher();
     
     /**
      * @brief Vérifie les événements utilisateur (clavier, fermeture).
      * @return int Code d'action :
-     * 0 : Aucun événement spécial.
-     * 1 : Demande de fermeture (croix ou Alt+F4).
-     * 2 : Touche 'M' pressée (demande de changement de matériau).
+     * 0 : Aucun événement
+     * 1 : Demande de fermeture (croix ou Alt+F4)
+     * 2 : Touche 'M' pressée (demande de changement de matériau)
      */
     int verifier_entree();
     
     /**
      * @brief Met le programme en pause.
-     * @param millisecondes Durée d'attente en millisecondes.
+     * @param millisecondes Durée d'attente en ms
      */
     void attendre(int millisecondes);
 
@@ -72,7 +72,7 @@ public:
     void changer_titre(const std::string& nouveau_titre);
 
     /**
-     * @brief Dessine la visualisation 1D (Barre).
+     * @brief Dessine la visualisation 1D 
      * @param temperatures Vecteur contenant les températures le long de la barre.
      * @param t_min Température min pour l'échelle de couleur.
      * @param t_max Température max pour l'échelle de couleur.
@@ -80,7 +80,7 @@ public:
     void dessiner_barre(const std::vector<double>& temperatures, double t_min, double t_max);
 
     /**
-     * @brief Dessine la visualisation 2D (Plaque).
+     * @brief Dessine la visualisation 2D
      * @param grille Vecteur linéarisé contenant les températures de la grille (taille N*N).
      * @param nb_points_cote Nombre de points N sur un côté de la grille carrée.
      * @param t_min Température min pour l'échelle de couleur.

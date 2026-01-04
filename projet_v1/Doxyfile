@@ -1,54 +1,21 @@
-# Doxyfile pour Projet Chaleur ENSIIE
-
-# --- Informations sur le projet ---
 PROJECT_NAME           = "Projet Chaleur GRASSIAN RHOUDDAL"
 PROJECT_NUMBER         = "1.0"
 OUTPUT_LANGUAGE        = French
-
-# --- Entrées (Où sont les fichiers ?) ---
-# Le point signifie "le dossier courant" (là où est le Doxyfile)
 INPUT                  = .
 RECURSIVE              = YES
 FILE_PATTERNS          = *.cpp \
                          *.h
-
-# --- Comportement ---
-# Si YES, génère la doc même pour les fonctions non commentées (utile pour voir ce qui manque)
 EXTRACT_ALL            = YES
-# Si YES, inclut aussi les méthodes/attributs privés (utile pour les débugger)
 EXTRACT_PRIVATE        = YES
-# Affiche les fichiers sources complets dans la doc
 SOURCE_BROWSER         = YES
-
-# --- Sorties (Quel format générer ?) ---
-# Générer un site web (HTML) pour naviguer facilement
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
-
-# Pas besoin de générer du LaTeX (tu écris déjà ton rapport manuellement)
 GENERATE_LATEX         = NO
-
-# Supprime les messages d'erreur non critiques lors de la génération
 QUIET                  = YES
-
-
-
-
-
-
-
-# Active la génération de graphiques
 HAVE_DOT               = YES
-
-# Dessine la hiérarchie des classes (Solveur -> Solveur1D...)
 CLASS_GRAPH            = YES
 COLLABORATION_GRAPH    = YES
-
-# Donne un look "UML" aux diagrammes (comme ton image)
 UML_LOOK               = YES
-
-# (Optionnel) Montre qui appelle quelle fonction
 CALL_GRAPH             = YES
 CALLER_GRAPH           = YES
-
 IMAGE_PATH             = .

@@ -8,14 +8,21 @@
 #include "solveur.h"
 #include "sdl_gestion.h"
 
-
+/**
+ * @brief Structure pour stocker les statistiques à chaque étape.
+ */
 struct EtapeLog {
     double temps;
     double t_max;
     double t_moy;
 };
 
-
+/**
+ * @brief Fabrique un solveur en fonction du choix de l'utilisateur.
+ * @param choix 1 pour 1D, 2 pour 2D.
+ * @param mat Matériau à utiliser.
+ * @return Pointeur unique vers le solveur créé.
+ */
 std::unique_ptr<Solveur> fabriquer_solveur(int choix, const Materiau& mat) {
     double t_max = 16.0;
     double L = 1.0;
@@ -24,6 +31,11 @@ std::unique_ptr<Solveur> fabriquer_solveur(int choix, const Materiau& mat) {
     return std::unique_ptr<Solveur>(new Solveur1D(mat, nb_points, L, t_max));
 }
 
+/**
+ * @brief Change le matériau en suivant le cycle cuivre -> fer -> verre -> polystyrène -> cuivre
+ * @param m Matériau actuel.
+ * @return Nouveau matériau.
+ */
 Materiau cycle_materiau(const Materiau& m) {
     if (m.get_nom() == "Cuivre") return Materiau("Fer", 80.2, 7874.0, 440.0);
     if (m.get_nom() == "Fer") return Materiau("Verre", 1.2, 2530.0, 840.0);
@@ -31,6 +43,12 @@ Materiau cycle_materiau(const Materiau& m) {
     return Materiau("Cuivre", 389.0, 8940.0, 380.0);
 }
 
+/**
+ * @brief Enregistre les statistiques actuelles du solveur.
+ * @param solveur Référence vers le solveur.
+ * @param max_temp_globale Référence vers la température maximale globale
+ * @return Structure EtapeLog contenant les statistiques mises a jour.
+ */
 EtapeLog enregistrer_stats(const Solveur& solveur, double& max_temp_globale) {
     const auto& donnees = solveur.get_donnees();
     double t_max = -1.0;
@@ -51,8 +69,7 @@ void afficher_rapport(const std::vector<EtapeLog>& historique, const std::string
     
     size_t pas = std::max((size_t)1, historique.size() / 20);
     
-    // Configuration du formatage pour les nombres flottants
-    std::cout << std::fixed; 
+    std::cout << std::fixed; // Formatage pour les nombres à virgule
 
     for (size_t i = 0; i < historique.size(); i += pas) {
         std::cout << "|  " 
@@ -68,15 +85,13 @@ void afficher_rapport(const std::vector<EtapeLog>& historique, const std::string
                   << std::setw(8) << std::setprecision(2) << last.t_max << "   |  "
                   << std::setw(8) << std::setprecision(2) << last.t_moy << "   |\n";
     }
-    
     std::cout.unsetf(std::ios_base::floatfield); 
-    
     std::cout << "======================================================\n";
     std::cout << ">>> APPUYEZ SUR 'M' POUR CHANGER DE MATERIAU <<<\n";
 }
 
 void mettre_a_jour_affichage(Sdl& sdl, Solveur* solv, int type_simu, double max_temp) {
-    (void)type_simu; // Pour éviter le warning "unused parameter" si on n'utilise pas type_simu ici
+    (void)type_simu; // Pour éviter le warning "unused parameter" si on n'utilise pas type_simu 
     
     std::string titre = "T=" + std::to_string((int)solv->get_temps_actuel()) + "s - " + solv->get_materiau().get_nom();
     if (solv->get_temps_actuel() >= solv->get_temps_max()) titre = "FINI - " + solv->get_materiau().get_nom() + " - PRESS M";
@@ -105,7 +120,7 @@ void gerer_rapport_final(const Solveur& solv, std::vector<EtapeLog>& hist,
     rapport_fait = true;
 }
 
-// --- MAIN ---
+//MAIN
 int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
     Sdl graphisme("Projet Chaleur", 800, 800);

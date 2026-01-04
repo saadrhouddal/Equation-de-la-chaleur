@@ -34,31 +34,24 @@ void Solveur1D::avancer_temps() {
     c[0] = -2.0 * r; 
     a[0] = 0.0; 
     b[n-1] = 1.0; a[n-1] = 0.0; c[n-1] = 0.0;
-
     double const_src = dt_ / (materiau_.get_rho() * materiau_.get_c());
-
     for(int i=0; i<n; ++i) {
-        rhs[i] = u_[i] + source_F(i*dx_) * const_src;
-    }
+        rhs[i] = u_[i] + source_F(i*dx_) * const_src; }
     rhs[n-1] = 13.0 + 273.15; 
     cp_[0] = c[0]/b[0];
     dp_[0] = rhs[0]/b[0];
-    
     for(int i=1; i<n; i++) {
         double temp = b[i] - a[i]*cp_[i-1];
         cp_[i] = c[i] / temp;
         dp_[i] = (rhs[i] - a[i]*dp_[i-1])/temp;
     }
-    
     u_next_[n-1] = dp_[n-1];
     for(int i=n-2; i>=0; i--) {
         u_next_[i] = dp_[i] - cp_[i]*u_next_[i+1];
     }
-
     u_ = u_next_;
     temps_actuel_ += dt_;
-    compteur_pas_++;
-}
+    compteur_pas_++;}
 
 Solveur2D::Solveur2D(Materiau mat, int nb_points, double L, double t_max)
     : Solveur(mat, L, t_max), N_(nb_points) {
@@ -121,7 +114,6 @@ void Solveur2D::etape_1_x_implicite(double r, double source_coeff) {
             double src = source_F(i * dx_, j * dx_) * source_coeff;
             double u_haut = (j > 0) ? u_[i * N_ + (j - 1)] : u_[i * N_ + 1]; 
             double u_bas  = (j < N_ - 1) ? u_[i * N_ + (j + 1)] : T_bord;
-
             double diff_y = r * (u_haut - 2.0 * u_[i * N_ + j] + u_bas);
             rhs_[i] = u_[i * N_ + j] + diff_y + src;
 

@@ -46,9 +46,9 @@ public:
     long long get_compteur_pas() const { return compteur_pas_; }
 };
 
-// --- Solveur 1D ---
+//Solveur 1D
 /**
- * @brief Implémentation 1D du solveur (Barre).
+ * @brief Implémentation 1D du solveur
  */
 class Solveur1D : public Solveur {
 private:
@@ -59,7 +59,7 @@ private:
     std::vector<double> cp_, dp_;
     
     /**
-     * @brief Calcule le terme source F(x).
+     * @brief Calcule F(x).
      */
     double source_F(double x);
 
@@ -69,9 +69,9 @@ public:
     const std::vector<double>& get_donnees() const override { return u_; }
 };
 
-// --- Solveur 2D ---
+//Solveur 2D
 /**
- * @brief Implémentation 2D du solveur (Plaque) utilisant la méthode ADI.
+ * @brief Implémentation 2D du solveur
  */
 class Solveur2D : public Solveur {
 private:
@@ -82,13 +82,13 @@ private:
     std::vector<double> u_demi_;
     std::vector<double> c_prime_, d_prime_;
 
-    // Vecteurs de travail pré-alloués
+    // Vecteurs pré-alloués
     std::vector<double> diag_inf_, diag_, diag_sup_, rhs_, result_;
 
     double source_F(double x, double y);
 
     /**
-     * @brief Résolution d'un système tridiagonal (Algorithme de Thomas).
+     * @brief Résolution d'un système tridiagonal (Algo de Thomas)
      */
     void resoudre_thomas(int n, 
                          const std::vector<double>& a_inf, 
@@ -96,8 +96,6 @@ private:
                          const std::vector<double>& c_sup, 
                          const std::vector<double>& d_rhs, 
                          std::vector<double>& x_sol);
-
-    // --- DECOUPAGE POUR RESPECTER LA REGLE DES 50 LIGNES ---
     
     /**
      * @brief Étape 1 ADI : Implicite en X, Explicite en Y.

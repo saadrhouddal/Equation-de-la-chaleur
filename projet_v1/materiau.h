@@ -1,3 +1,17 @@
+// On a mis ici le commentaire de la page principale Doxygen :
+
+/**
+ * \mainpage Documentation du Projet Simulation Chaleur
+ *
+ * \section intro_sec Introduction
+ * Bienvenue dans la documentation technique du solveur thermique.
+ *
+ * \section arch_sec Architecture
+ * Voici l'architecture globale du projet :
+ * \image html uml.png "Diagramme UML des classes" width=600px
+ */
+
+
 #ifndef MATERIAU_H
 #define MATERIAU_H
 
@@ -10,17 +24,17 @@
 class Materiau {
 private:
     std::string nom_;
-    double lambda_; // Conductivité thermique (W/m.K)
-    double rho_;    // Masse volumique (kg/m3)
-    double c_;      // Chaleur massique (J/kg.K)
+    double lambda_; // Conductivité thermique
+    double rho_;    // Masse volumique
+    double c_;      // Chaleur massique
 
 public:
     /**
      * @brief Constructeur d'un matériau.
      * @param nom Nom du matériau .
-     * @param lambda Conductivité (W/m.K).
-     * @param rho Masse volumique (kg/m3).
-     * @param c Chaleur massique (J/kg.K).
+     * @param lambda Conductivité thermique
+     * @param rho Masse volumique
+     * @param c Chaleur massique
      */
     Materiau(std::string nom, double lambda, double rho, double c)
         : nom_(nom), lambda_(lambda), rho_(rho), c_(c) {}
@@ -38,13 +52,3 @@ public:
 };
 
 #endif
-/**
- * \mainpage Documentation du Projet Simulation Chaleur
- *
- * \section intro_sec Introduction
- * Bienvenue dans la documentation technique du solveur thermique.
- *
- * \section arch_sec Architecture
- * Voici l'architecture globale du projet :
- * \image html uml.png "Diagramme UML des classes" width=600px
- */
