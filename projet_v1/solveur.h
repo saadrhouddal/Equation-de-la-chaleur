@@ -65,8 +65,8 @@ private:
 
 public:
     Solveur1D(Materiau mat, int nb_points, double L, double t_max);
-    void avancer_temps() override;
-    const std::vector<double>& get_donnees() const override { return u_; }
+    void avancer_temps();
+    const std::vector<double>& get_donnees() const { return u_; }
 };
 
 //Solveur 2D
@@ -113,8 +113,8 @@ private:
 
 public:
     Solveur2D(Materiau mat, int nb_points, double L, double t_max);
-    void avancer_temps() override;
-    const std::vector<double>& get_donnees() const override { return u_; }
+    void avancer_temps();
+    const std::vector<double>& get_donnees() const { return u_; }
     int get_N() const { return N_; }
 };
 
